@@ -4,7 +4,7 @@
 __PocketMine Plugin__
 name=LifeEX
 description=Make by SXBox
-version=0.1
+version=0.1.1
 author=SXBox
 class=LifeEX
 apiversion=8,9,10,11
@@ -14,6 +14,11 @@ apiversion=8,9,10,11
 =============
 [Plugin]0.1
 최초 릴리스
+[Plugin]0.1.1
+mygen 작동(원본님)
+chgen,marry 소스 변경(추후 구현)
+LifeEX/Data 삭제(config.yml로 변경)
+LifeEx/chat.yml삭제
 */
 
 class LifeEX implements Plugin{
@@ -23,45 +28,46 @@ class LifeEX implements Plugin{
 		$this->api = $api;
 	}
 	public function __destruct(){}
+	private function overwriteConfig($dat){
+			$cfg = array();
+			$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
+			$result = array_merge($cfg, $dat);
+			$this->api->plugin->writeYAML($this->path."config.yml", $result);
+		}	
 	public function init(){
 		$this->api->addHandler("player.join", array($this, "Handler"), 5);		
 		$this->api->addHandler("player.quit", array($this, "Handler"), 5);
 		$this->api->addHandler("player.chat", array($this, "Handler"), 5);
+		$this->api->addHandler("player.death", array($this, "Handler"), 5);
 		$this->api->console->register("marry", "", array($this, "defaultCommands"));
 		$this->api->console->register("chgen", "", array($this, "defaultCommands"));
 		$this->api->console->register("mygen", "", array($this, "defaultCommands"));
-		$this->readConfig();
-	}
-	
-	public function readConfig(){
-			if(!file_exists(DATA_PATH."/plugins/LifeEX/chat.yml")){
-			console("[ERROR] \"chat.yml\" file not found!");
-		}else{
-			$this->lang = new Config(DATA_PATH."/plugins/LifeEX/chat.yml", CONFIG_YAML);
-		}
-		if(is_dir("./plugins/LifeEX/Data/") === false){
-			mkdir("./plugins/LifeEX/Data/");
-		}
+		$this->path = $this->api->plugin->createConfig($this, array());
 	}
 	
 	public function Handler(&$data, $event){
+		$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
 		switch($event){
 			case "player.join":
-					$spawn = $data->level->getSpawn();
-					$this->data[$data->iusername] = new Config(DATA_PATH."/plugins/LifeEX/Data/".$data->iusername.".yml", CONFIG_YAML, array(
-									'userjob' => "People",
+				$target = $data->username;
+				if(!array_key_exists($target, $cfg))
+				{
+					$this->api->plugin->createConfig($this,array(
+							$target => array(
+									'userjob' => "Human",
 									'school' => "Elementary",
 									'year' => "7",
 									'gender' => "Male",
 									'marry' => false,
+							)
 					));
-				break;
-			case "player.quit":
-				if($this->data[$data->iusername] instanceof Config){
-					$this->data[$data->iusername]->save();
 				}
 				break;
+			case "player.quit":
+				break;
 			case "player.chat":
+				break;
+			case "player.death":
 				break;
 				}
 			}
@@ -70,65 +76,43 @@ class LifeEX implements Plugin{
 		$output = "";
 		switch($cmd){
 			case "chgen":
-				if($params[0] == ""){
-					$output .= "Usage: /$cmd <player>\n";
+				$subCommand = $args[0];
+				$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
+				switch($subCommand){
+					case "":
+				if(!($issuer instanceof Player)){
+					$output .= "Please run this command in-game.\n";
 					break;
 				}
-				$target = $this->api->player->get($params[0]);
-				if($target === false){
-					$output = "[LifeEX]Player not found";
+					break;
+					case "male":
+				if(!($issuer instanceof Player)){
+					$output .= "Please run this command in-game.\n";
 					break;
 				}
-				if($this->data[$target->iusername]->get("gender") === Female){
-					$target->sendChat($this->getMessage("yourmale"));
-					$this->data[$target->iusername]->set("gender", Male);
-				}else{
-					$target->sendChat($this->getMessage("yourfemale"));
-					$this->data[$target->iusername]->set("gender", Female);
+						break;
+					case "female":
+				if(!($issuer instanceof Player)){
+					$output .= "Please run this command in-game.\n";
+					break;
 				}
-				break;
+			}
 			case "marry":
-				if($params[0] == ""){
-					$output .= "Usage: /$cmd <player>\n";
-					break;
-				}
-				$target = $this->api->player->get($params[0]);
-				if($target === false){
-					$output = "[LifeEX]Player not found";
-					break;
-				}
-				if($this->data[$target->iusername]->get("marry") === false){
-					$target->sendChat($this->getMessage("youmarry"));
-					$this->data[$target->iusername]->set("marry", true);
-				}else{
-					$target->sendChat($this->getMessage("youdivorce"));
-					$this->data[$target->iusername]->set("marry", false);
-				}
 				break;
 			case "mygen":
-				if($params[0] == ""){
-					$output .= "Usage: /$cmd <player>\n";
+				$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
+				if(!($issuer instanceof Player)){
+					$output .= "Please run this command in-game.\n";
 					break;
 				}
-				$target = $this->api->player->get($params[0]);
-				if($target === false){
-					$output = "[LifeEX]Player not found";
-					break;
-				}
-				if($this->data[$target->iusername]->get("gender") === Male){
-					$target->sendChat($this->getMessage("yourmale"));
-				}else{
-					$target->sendChat($this->getMessage("yourfemale"));
-				}
+				if(!array_key_exists($issuer->username, $cfg)){
+						$output .= "[LifeEX]You not human.";
+						break;
+					}
+				$gender = $cfg[$issuer->username]['gender'];
+				$output .= "[LifeEX]You are $gender";
 				break;
+				}
+			 return $output;
 			}
-		}	
-
-	public function getMessage($msg, $params = array("%1", "%2", "%3", "%4")){
-		$msgs = array_merge($this->lang->get("LifeEX"));
-		if(!isset($msgs[$msg])){
-			return $this->getMessage("noMessages", array($msg));
 		}
-		return str_replace(array("%1", "%2", "%3", "%4"), array($params[0], $params[1], $params[2], $params[3]), $msgs[$msg])."\n";
-	}
-}
