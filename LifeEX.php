@@ -74,33 +74,45 @@ class LifeEX implements Plugin{
 
 	public function defaultCommands($cmd, $params, $issuer, $alias){
 		$output = "";
+		$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
 		switch($cmd){
 			case "chgen":
 				$subCommand = $args[0];
-				$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
 				switch($subCommand){
 					case "":
 				if(!($issuer instanceof Player)){
 					$output .= "Please run this command in-game.\n";
 					break;
 				}
-					break;
-					case "male":
+					/*$output .= "Usage: /chgen <male/female>"
+						break;*/
+			case "male":
 				if(!($issuer instanceof Player)){
 					$output .= "Please run this command in-game.\n";
 					break;
 				}
-						break;
+					/*$output = "You are Male"
+						break;*/
 					case "female":
 				if(!($issuer instanceof Player)){
 					$output .= "Please run this command in-game.\n";
 					break;
 				}
+					/*$output = "You are Male"
+						break;*/
 			}
 			case "marry":
-				break;
+				if(!($issuer instanceof Player)){
+					$output .= "Please run this command in-game.\n";
+					break;
+				}
+				if(!array_key_exists($issuer->username, $cfg)){
+						$output .= "[LifeEX]You not human.";
+						break;
+					}
+				/*$output .= "[LifeEX]You're married";
+				break;*/
 			case "mygen":
-				$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
 				if(!($issuer instanceof Player)){
 					$output .= "Please run this command in-game.\n";
 					break;
