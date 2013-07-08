@@ -1,6 +1,5 @@
 <?php
 
-
 /*
 __PocketMine Plugin__
 name=LifeEX
@@ -25,12 +24,9 @@ LifeEx/chat.yml삭제
 config.yml 잡 옵션 제거
 명령어&안내문&config.yml 한글화
 진급&성별선택&결혼 수정중(0.2부터 사용가능합니다) 
-op아니어도 명령어 사용가능 
 */
 
-
 class LifeEX implements Plugin{
-
 
   private $api;
   public function __construct(ServerAPI $api, $server = false){
@@ -39,67 +35,52 @@ class LifeEX implements Plugin{
 	public function __destruct(){}
 	private function overwriteConfig($dat){
 			$cfg = array();
-			$cfg = $this->api->plugin->readYAML($this->path . "LifeEXdata.yml");
+			$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
 			$result = array_merge($cfg, $dat);
-			$this->api->plugin->writeYAML($this->path."LifeEXdata.yml", $result);
+			$this->api->plugin->writeYAML($this->path."config.yml", $result);
 		}	
 	public function init(){
-	if(!file_exists("./plugins/LifeEX")){
-		mkdir("./plugins/LifeEX");
-		}
 		$this->api->addHandler("player.join", array($this, "Handler"), 5);		
 		$this->api->addHandler("player.chat", array($this, "Handler"), 5);
 		$this->api->addHandler("player.quit", array($this, "Handler"), 5);
-		$this->server->api->event("server.close", array($this, "handle"));
 		$this->api->console->register("결혼", "", array($this, "defaultCommands"));
 		$this->api->console->register("성별선택", "", array($this, "defaultCommands"));
 		$this->api->console->register("내성별", "", array($this, "defaultCommands"));
 		$this->api->console->register("진급", "", array($this, "defaultCommands"));
-		$this->lifedata = new Config("./plugins/LifeEX/LifeEXdata.yml", CONFIG_YAML);
-		$lifedata = $this->server->api->plugin->readYAML("./plugins/LifeEX/LifeEXdata.yml");
-		$this->server->api->ban->cmdWhitelist("내성별");
-		$this->server->api->ban->cmdWhitelist("성별선택");
-		$this->server->api->ban->cmdWhitelist("진급");
-		$this->server->api->ban->cmdWhitelist("결혼");
+		$this->path = $this->api->plugin->createConfig($this, array());
 	}
 
-
 	public function Handler(&$data, $event){
-		$cfg = $this->api->plugin->readYAML($this->path . "LifeEXdata.yml");
+		$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
 		switch($event){
 			case "player.join":
 				$target = $data->username;
 				if(!array_key_exists($target, $cfg)){
-					$this->api->plugin->createConfig($this,array(
-						$target => array(
+					$this->api->plugin->createConfig($this,array($target => array(
 							'종족' => "선택안함",
 							'학교' => "초등학생",
 							'나이' => "7",
 							'성별' => "선택안함",
 							'결혼' => "X",
-							)
-					));
+							)));
 				}
-			/*if($cfg[$issuer->username]['결혼'] !== X){
-			}*/
+			if($cfg[$issuer->username]['결혼'] !== X){
+			}
 				break;
 			case "player.chat":
-			/*if($cfg[$issuer->username]['결혼'] !== X){
-			}*/
+			if($cfg[$issuer->username]['결혼'] !== X){
+			}
 				break;
 			case "player.quit":
-			/*if($cfg[$issuer->username]['결혼'] !== X){
-			}*/
+			if($cfg[$issuer->username]['결혼'] !== X){
+			}
 			break;
-            case "server.close":
-            $this->lifedata->save();
 				}
 			}
 
-
 	public function defaultCommands($cmd, $params, $issuer, $alias){
 		$output = "";
-		$cfg = $this->api->plugin->readYAML($this->path . "LifeEXdata.yml");
+		$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
 		switch($cmd){
 			case "성별선택":
 				$command= $params[0];
@@ -186,4 +167,3 @@ class LifeEX implements Plugin{
 			 return $output;
 			}
 		}
-
