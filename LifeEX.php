@@ -54,9 +54,12 @@ class LifeEX implements Plugin{
 		$this->api->console->register("진급", "", array($this, "defaultCommands"));
 		$this->lifedata = new Config("./plugins/LifeEX/LifeEXdata.yml", CONFIG_YAML);
 		$lifedata = $this->server->api->plugin->readYAML("./plugins/LifeEX/LifeEXdata.yml");
-		$this->server->api->ban->cmdWhitelist("takedebt");
+		$this->server->api->ban->cmdWhitelist("내성별");
+		$this->server->api->ban->cmdWhitelist("성별선택");
+		$this->server->api->ban->cmdWhitelist("진급");
+		$this->server->api->ban->cmdWhitelist("결혼");
 	}
-	
+
 	public function Handler(&$data, $event){
 		$cfg = $this->api->plugin->readYAML($this->path . "LifeEXdata.yml");
 		switch($event){
