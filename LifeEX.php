@@ -4,7 +4,7 @@
 __PocketMine Plugin__
 name=LifeEX
 description=Make by SXBox
-version=0.1.2
+version=0.1.3
 author=SXBox
 class=LifeEX
 apiversion=8,9,10,11
@@ -16,16 +16,19 @@ apiversion=8,9,10,11
 최초 릴리스
 ---------------
 [Plugin]0.1.1
-메세지 안뜨는것 수정(by 원본)
+mygen 작동(by PocketMoney)
+Return $output(by 원본)
 LifeEX/Data 삭제(config.yml로 변경)
 LifeEx/chat.yml삭제
 ----------------
 [Plugin]0.1.2
 진급 명령어 추가
+성별선택 준비중
+성별선택시 다시 못바꾸게 수정
+성별선택 문구 활성화(접속후 & /내성별)
 명령어&안내문&config.yml 한글화
+진급 메시지 구현
 config.yml 잡 옵션 제거
-op아니어도 명령어 사용가능
-진급&성별선택&결혼 수정중(0.2부터 사용가능합니다)
 */
 
 class LifeEX implements Plugin{
@@ -37,9 +40,9 @@ class LifeEX implements Plugin{
 	public function __destruct(){}
 	private function overwriteConfig($dat){
 			$cfg = array();
-			$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
+			$cfg = $this->api->plugin->readYAML($this->path . "LifeEXdata.yml");
 			$result = array_merge($cfg, $dat);
-			$this->api->plugin->writeYAML($this->path."config.yml", $result);
+			$this->api->plugin->writeYAML($this->path."LifeEXdata.yml", $result);
 		}	
 	public function init(){
 	if(!file_exists("./plugins/LifeEX")){
@@ -55,14 +58,11 @@ class LifeEX implements Plugin{
 		$this->api->console->register("진급", "", array($this, "defaultCommands"));
 		$this->lifedata = new Config("./plugins/LifeEX/LifeEXdata.yml", CONFIG_YAML);
 		$lifedata = $this->server->api->plugin->readYAML("./plugins/LifeEX/LifeEXdata.yml");
-		$this->server->api->ban->cmdWhitelist("성별선택");
-		$this->server->api->ban->cmdWhitelist("내성별");
-		$this->server->api->ban->cmdWhitelist("진급");
-		$this->server->api->ban->cmdWhitelist("결혼");
+		$this->server->api->ban->cmdWhitelist("takedebt");
 	}
 	
 	public function Handler(&$data, $event){
-		$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
+		$cfg = $this->api->plugin->readYAML($this->path . "LifeEXdata.yml");
 		switch($event){
 			case "player.join":
 				$target = $data->username;
@@ -89,7 +89,6 @@ class LifeEX implements Plugin{
 			}*/
 			break;
             case "server.close":
-            $this->lifedata->setAll($this->money);
             $this->lifedata->save();
 				}
 			}
