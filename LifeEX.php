@@ -4,7 +4,7 @@
 __PocketMine Plugin__
 name=LifeEX
 description=Make by SXBox
-version=0.1.3
+version=0.1.2
 author=SXBox
 class=LifeEX
 apiversion=8,9,10,11
@@ -16,19 +16,15 @@ apiversion=8,9,10,11
 최초 릴리스
 ---------------
 [Plugin]0.1.1
-mygen 작동(by PocketMoney)
-Return $output(by 원본)
+명령어 오류 수정(by 원본) 
 LifeEX/Data 삭제(config.yml로 변경)
 LifeEx/chat.yml삭제
 ----------------
 [Plugin]0.1.2
-진급 명령어 추가
-성별선택 준비중
-성별선택시 다시 못바꾸게 수정
-성별선택 문구 활성화(접속후 & /내성별)
-명령어&안내문&config.yml 한글화
-진급 메시지 구현
 config.yml 잡 옵션 제거
+명령어&안내문&config.yml 한글화
+진급&성별선택&결혼 수정중(0.2부터 사용가능합니다) 
+op아니어도 명령어 사용가능 
 */
 
 class LifeEX implements Plugin{
