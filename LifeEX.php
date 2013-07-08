@@ -4,7 +4,7 @@
 __PocketMine Plugin__
 name=LifeEX
 description=Make by SXBox
-version=0.1.2
+version=0.1.3
 author=SXBox
 class=LifeEX
 apiversion=8,9,10,11
@@ -25,6 +25,8 @@ config.yml 잡 옵션 제거
 명령어&안내문&config.yml 한글화
 진급&성별선택&결혼 수정중(0.2부터 사용가능합니다) 
 op아니어도 명령어 사용가능 
+[Plugin]0.1.3
+
 */
 
 class LifeEX implements Plugin{
@@ -168,7 +170,7 @@ class LifeEX implements Plugin{
 					break;
 				}
 				if($cfg[$issuer->username]['나이'] === 13){
-				$cfg[$issuer->username]['학교'] = '중학생'
+				$cfg[$issuer->username]['학교'] = '중학생';
 				$output .= "[LifeEX]당신은 이제 중학생입니다";
 				}else if($cfg[$issuer->username]['나이'] === 16){
 				$output .= "[LifeEX]당신은 이제 고등학생입니다";
