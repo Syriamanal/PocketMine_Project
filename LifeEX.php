@@ -1,10 +1,11 @@
 <?php
 
+
 /*
 __PocketMine Plugin__
 name=LifeEX
 description=Make by SXBox
-version=0.1.3
+version=0.1.2
 author=SXBox
 class=LifeEX
 apiversion=8,9,10,11
@@ -25,11 +26,11 @@ config.yml 잡 옵션 제거
 명령어&안내문&config.yml 한글화
 진급&성별선택&결혼 수정중(0.2부터 사용가능합니다) 
 op아니어도 명령어 사용가능 
-[Plugin]0.1.3
-
 */
 
+
 class LifeEX implements Plugin{
+
 
   private $api;
   public function __construct(ServerAPI $api, $server = false){
@@ -62,6 +63,7 @@ class LifeEX implements Plugin{
 		$this->server->api->ban->cmdWhitelist("결혼");
 	}
 
+
 	public function Handler(&$data, $event){
 		$cfg = $this->api->plugin->readYAML($this->path . "LifeEXdata.yml");
 		switch($event){
@@ -93,6 +95,7 @@ class LifeEX implements Plugin{
             $this->lifedata->save();
 				}
 			}
+
 
 	public function defaultCommands($cmd, $params, $issuer, $alias){
 		$output = "";
@@ -183,3 +186,4 @@ class LifeEX implements Plugin{
 			 return $output;
 			}
 		}
+
