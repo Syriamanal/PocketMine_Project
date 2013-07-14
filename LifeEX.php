@@ -4,7 +4,7 @@
 __PocketMine Plugin__
 name=LifeEX
 description=Make by SXBox
-version=0.2
+version=0.2.1
 author=SXBox
 class=LifeEX
 apiversion=8,9,10,11
@@ -33,9 +33,15 @@ config.yml 잡 옵션 제거
 내성별->성향(나이,성별 등 내성향 모두 확인)
 성별*종족선택->선택 <종족/성별> <사람,A,B,C/남,여>
 선택,성향,진급,결혼 구현(종족->사람밖에없음)
-결혼 거절은 없습니다(추후 이혼으로 거절하십시오)
+결혼은 아직 거절은 없습니다
 나이는 아직 수동적(yml수정)
 이제 op가 아니어도 명령어를 사용 가능합니다
+----------------
+[Plugin]0.2.1
+Lifedata->Player(폴더 변경)
+여자가 결혼할시 안되던점 수정
+현재 결혼할시 데이터에 안남는점 수정중
+일부 오류 수정
 =============
 */
 
@@ -53,15 +59,15 @@ class LifeEX implements Plugin{
 			$this->api->plugin->writeYAML($this->path."config.yml", $result);
 		}	
 	public function init(){
-		$this->api->addHandler("player.join", array($this, "Handler"), 5);		
-		$this->api->addHandler("player.chat", array($this, "Handler"), 5);
-		$this->api->addHandler("player.quit", array($this, "Handler"), 5);
-		$this->api->addHandler("player.spawn", array($this, "Handler"), 6);
 		$this->api->ban->cmdWhitelist("결혼");
 		$this->api->ban->cmdWhitelist("성향");
 		$this->api->ban->cmdWhitelist("진급");
 		$this->api->ban->cmdWhitelist("선택");
 		$this->api->ban->cmdWhitelist("이혼");
+		$this->api->addHandler("player.join", array($this, "Handler"), 5);		
+		$this->api->addHandler("player.chat", array($this, "Handler"), 5);
+		$this->api->addHandler("player.quit", array($this, "Handler"), 5);
+		$this->api->addHandler("player.spawn", array($this, "Handler"), 6);
 		$this->api->console->register("결혼", "", array($this, "defaultCommands"));
 		$this->api->console->register("이혼", "", array($this, "defaultCommands"));
 		$this->api->console->register("성향", "", array($this, "defaultCommands"));
@@ -73,14 +79,14 @@ class LifeEX implements Plugin{
 	public function readConfig(){
 		$this->path = $this->api->plugin->createConfig($this, array(
 			"LifeEX설정" => array(
-				"" => "",
+				"설정" => false,
 			),
 		));
 		if(is_dir("./plugins/LifeEX/") === false){
 			mkdir("./plugins/LifeEX/");
 		}
-		if(is_dir("./plugins/LifeEX/LifeData/") === false){
-			mkdir("./plugins/LifeEX/LifeData/");
+		if(is_dir("./plugins/LifeEX/Player/") === false){
+			mkdir("./plugins/LifeEX/Player/");
 		}
 	}
 	
@@ -95,8 +101,7 @@ class LifeEX implements Plugin{
 					}
 					break;
 			case "player.join":
-					$this->data[$data->username] = new Config(DATA_PATH."/plugins/LifeEX/LifeData/".$data->username.".yml", CONFIG_YAML, array(
-							"이름" =>  $data->username,
+					$this->data[$data->username] = new Config(DATA_PATH."/plugins/LifeEX/Player/".$data->username.".yml", CONFIG_YAML, array(
 							'종족' => "선택안함",
 							'성별' => "선택안함",
 							'결혼' => "X",
@@ -116,7 +121,6 @@ class LifeEX implements Plugin{
 			
 	public function defaultCommands($cmd, $params, $issuer, $alias){
 		$output = "";
-		$cf = $this->api->plugin->readYAML(DATA_PATH."/plugins/PocketMoney/" . "config.yml");
 		$cfg = $this->data;
 		switch($cmd){
 			case "선택":
@@ -385,8 +389,14 @@ class LifeEX implements Plugin{
 				$output .= "[LifeEX]아쉽지만 $parm 님은 남자입니다";
 				break;
 				}else if($cfg[$issuer->username]->get("성별") === 남자 and $cfg[$parm->username]->get("성별") === 여자){
-				$output .= "[LifeEX]당신은 $parm 님과 결혼하셧습니다. 축하합니다!";
+				$parm = $this->api->player->get($params[0]);
 				$this->api->chat->broadcast("[LifeEX]축하합니다 $issuer 님은 $parm 님과 결혼하셧습니다!");
+				$cfg[$parm->username]->set("결혼", $issuer);
+				$cfg[$issuer->username]->set("결혼", $parm);
+				break;
+				}else if($cfg[$issuer->username]->get("성별") === 여자 and $cfg[$parm->username]->get("성별") === 남자){
+				$this->api->chat->broadcast("[LifeEX]축하합니다 $issuer 님은 $parm 님과 결혼하셧습니다!");
+				$parm = $this->api->player->get($params[0]);
 				$cfg[$parm->username]->set("결혼", $issuer);
 				$cfg[$issuer->username]->set("결혼", $parm);
 				break;
