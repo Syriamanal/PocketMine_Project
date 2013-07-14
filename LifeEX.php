@@ -40,7 +40,6 @@ config.yml 잡 옵션 제거
 [Plugin]0.2.1
 Lifedata->Player(폴더 변경)
 여자가 결혼할시 안되던점 수정
-현재 결혼할시 데이터에 안남는점 수정중
 일부 오류 수정
 =============
 */
@@ -112,8 +111,8 @@ class LifeEX implements Plugin{
 			case "player.chat":
 				break;
 			case "player.quit":
-				if($this->data[$data->iusername] instanceof Config){
-					$this->data[$data->iusername]->save();
+				if($this->data[$data->username] instanceof Config){
+					$this->data[$data->username]->save();
 				}
 				break;
 				}
