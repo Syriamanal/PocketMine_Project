@@ -101,6 +101,7 @@ class LifeEX implements Plugin{
 					break;
 			case "player.join":
 					$this->data[$data->username] = new Config(DATA_PATH."/plugins/LifeEX/Player/".$data->username.".yml", CONFIG_YAML, array(
+							'성명' => $data->username,
 							'종족' => "선택안함",
 							'성별' => "선택안함",
 							'결혼' => "X",
