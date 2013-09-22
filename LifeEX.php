@@ -3,9 +3,9 @@
 /*
 __PocketMine Plugin__
 name=LifeEX
-description=Make by SXBox
-version=0.2.1
-author=SXBox
+description=
+version=0.3 Major
+author=Milphy
 class=LifeEX
 apiversion=8,9,10,11
 -------------
@@ -17,7 +17,6 @@ apiversion=8,9,10,11
 [Plugin]0.1.1
 명령어 오류 수정(by 원본) 
 LifeEX/Data 삭제(config.yml로 변경)
-LifeEx/chat.yml삭제
 ----------------
 [Plugin]0.1.2
 config.yml 잡 옵션 제거
@@ -31,7 +30,7 @@ config.yml 잡 옵션 제거
 [Plugin]0.2
 일부 오류및 자잘한버그 수정
 내성별->성향(나이,성별 등 내성향 모두 확인)
-성별*종족선택->선택 <종족/성별> <사람,A,B,C/남,여>
+성별*종족선택->선택 <종족/성별> <사람/남,여>
 선택,성향,진급,결혼 구현(종족->사람밖에없음)
 결혼은 아직 거절은 없습니다
 나이는 아직 수동적(yml수정)
@@ -39,8 +38,17 @@ config.yml 잡 옵션 제거
 ----------------
 [Plugin]0.2.1
 Lifedata->Player(폴더 변경)
-여자가 결혼할시 안되던점 수정
+결혼이 안되던점 수정
 일부 오류 수정
+----------------
+[Plugin]0.3 Major
+이혼 구현
+종족 활성화(천족,마족)
+종족별 특성 추가
+나이 시스템 추가(시간이되면 오름)
+명령어 변경
+선택-> 종족,성별
+상대의 성향 확인가능(/성향 <상대>)
 =============
 */
 
@@ -50,308 +58,228 @@ class LifeEX implements Plugin{
   public function __construct(ServerAPI $api, $server = false){
 		$this->api = $api;
 	}
-	public function __destruct(){}
-	private function overwriteConfig($dat){
-			$cfg = array();
-			$cfg = $this->api->plugin->readYAML($this->path . "config.yml");
-			$result = array_merge($cfg, $dat);
-			$this->api->plugin->writeYAML($this->path."config.yml", $result);
-		}	
+	public function __destruct(){}	
 	public function init(){
+		$this->readConfig();
 		$this->api->ban->cmdWhitelist("결혼");
 		$this->api->ban->cmdWhitelist("성향");
-		$this->api->ban->cmdWhitelist("진급");
 		$this->api->ban->cmdWhitelist("선택");
+		$this->api->ban->cmdWhitelist("직업");
 		$this->api->ban->cmdWhitelist("이혼");
-		$this->api->addHandler("player.join", array($this, "Handler"), 5);		
-		$this->api->addHandler("player.chat", array($this, "Handler"), 5);
-		$this->api->addHandler("player.quit", array($this, "Handler"), 5);
-		$this->api->addHandler("player.spawn", array($this, "Handler"), 6);
-		$this->api->console->register("결혼", "", array($this, "defaultCommands"));
+		$this->api->addHandler("player.join", array($this, "handler"), 5);
+		$this->api->addHandler("player.quit", array($this, "handler"), 5);
+		$this->api->addHandler("player.spawn", array($this, "handler"), 5);
+		$this->api->addHandler("player.respawn", array($this, "handler"), 5);
+		$this->api->addHandler("player.block.place", array($this, "handler"), 15);
+		$this->api->addHandler("player.block.break", array($this, "handler"), 15);
 		$this->api->console->register("이혼", "", array($this, "defaultCommands"));
+		$this->api->console->register("직업", "", array($this, "defaultCommands"));
 		$this->api->console->register("성향", "", array($this, "defaultCommands"));
-		$this->api->console->register("진급", "<초/중/고/대>", array($this, "defaultCommands"));
-		$this->api->console->register("선택", "<종족/성별> <사람,A,B,C/남,여>", array($this, "defaultCommands"));
-		$this->readConfig();
+		$this->api->console->register("결혼", "<상대>", array($this, "defaultCommands"));
+		$this->api->console->register("선택", "<천족,마족> <남,여>", array($this, "defaultCommands"));
+		$this->config = new Config("./plugins/LifeEX/config.yml", CONFIG_YAML, array("나이상승" => 45));
+		$this->api->schedule(8400, array($this, "handler"), array(), true, "LifeEX.SelectSystem");
+		$this->api->schedule(1200 * $this->config->get("나이상승"), array($this, "handler"), array(), true, "LifeEX.YearSystem");
 	}
 	
 	public function readConfig(){
-		$this->path = $this->api->plugin->createConfig($this, array(
-			"LifeEX설정" => array(
-				"설정" => false,
-			),
-		));
-		if(is_dir("./plugins/LifeEX/") === false){
-			mkdir("./plugins/LifeEX/");
-		}
-		if(is_dir("./plugins/LifeEX/Player/") === false){
-			mkdir("./plugins/LifeEX/Player/");
+		if(is_dir(DATA_PATH."/plugins/LifeEX/") === false or is_dir(DATA_PATH."/plugins/LifeEX/Player/") === false){
+			mkdir(DATA_PATH."/plugins/LifeEX/");
+			mkdir(DATA_PATH."/plugins/LifeEX/player/");
 		}
 	}
-	
-	public function Handler(&$data, $event){
+				
+	public function handler($data, $event){
 		switch($event){
-			case "player.spawn":
-					if($this->data[$data->username]->get("종족") === 선택안함 or $this->data[$data->username]->get("성별") === 선택안함){
-					$data->sendChat("[LifeEX]종족 또는 성별을 선택해주세요\n/선택 <종족/성별> <사람,A,B,C/남,여>\n");
-						break;
-					}else{
-					$data->sendChat("[LifeEX]환영합니다.즐거운 시간되세요 ^_^\n");
-					}
-					break;
 			case "player.join":
 					$this->data[$data->username] = new Config(DATA_PATH."/plugins/LifeEX/Player/".$data->username.".yml", CONFIG_YAML, array(
-							'성명' => $data->username,
 							'종족' => "선택안함",
 							'성별' => "선택안함",
-							'결혼' => "X",
 							'나이' => "5",
 							'학교' => "X",
+							'직업' => "없음",
+							'결혼' => "X",
 						));
-				break;
-			case "player.chat":
-				break;
+					break;
 			case "player.quit":
 				if($this->data[$data->username] instanceof Config){
 					$this->data[$data->username]->save();
 				}
 				break;
+			case "player.spawn":
+					if($this->data[$data->username]->get("성별") === "선택안함"){
+					$data->sendChat("[LifeEX]성별및 종족을 선택해주세요\n선택하는법:/선택 <천족,마족> <남,여>\n");
+						break;
+					}
+					break;
+			case "player.respawn":
+					if($this->data[$data->username]->get("나이") >= 60){
+					$this->data[$data->username]->set("나이", 20);
+					}
+					break;
+			case "player.block.place":
+				$item = $data["item"];
+				$player = $this->api->player->get($data["player"]);
+				if($item->getID() === 14 or $item->getID() === 15){ if($player->gamemode !== CREATIVE and !$this->api->ban->isOp($data["player"]) and $this->data[$player]->get("종족") === "천족") return false; }
+					break;
+			case "player.block.break":
+				$target  = $data["target"];
+				$player = $this->api->player->get($data["player"]);
+				if($target->getID() === 14 or $target->getID() === 15){
+					if($player->gamemode !== CREATIVE and $this->data[$player]->get("종족") === "천족"){
+						$this->api->entity->drop(new Position($player->entity->x - 0.5, $player->entity->y, $player->entity->z - 0.5, $player->entity->level), BlockAPI::getItem($target->getID()));
+						break;
+					}
+				break;
+				}else if($target->getID() === 56){
+					if($player->gamemode !== CREATIVE and $this->data[$player]->get("종족") === "천족"){
+						$this->api->entity->drop(new Position($player->entity->x - 0.5, $player->entity->y, $player->entity->z - 0.5, $player->entity->level), BlockAPI::getItem(264));
+						break;
+					}
+				break;
+				}
+				break;
+			case "LifeEX.SelectSystem":
+      			foreach($this->api->player->online() as $online){
+        			$play = $this->api->player->get($online);
+        			if($this->data[$play->username]->get("성별") === "선택안함"){
+						$play->sendChat("[LifeEX]성별및 종족을 선택해주세요\n선택하는법:/선택 <천족,마족> <남,여>");
+					}
+				}
+				break;
+			case "LifeEX.YearSystem":
+      			foreach($this->api->player->online() as $online){
+        			$play = $this->api->player->get($online);
+        			$this->data[$play->username]->set("나이", $this->data[$play->username]->get("나이")+1);
+					$play->sendChat("[LifeEX]당신의 나이가 올랐습니다(".$this->data[$play->username]->get("나이")."살)");
+					if($this->data[$play->username]->get("나이") === 7){
+						$play->sendChat("[LifeEX]입학을 축하합니다! 당신은 초등학생입니다");
+						$this->data[$play->username]->set("학교", 초등학생);
+					}elseif($this->data[$play->username]->get("나이") === 13){
+						$play->sendChat("[LifeEX]입학을 축하합니다! 당신은 중학생입니다");
+						$this->data[$play->username]->set("학교", 중학생);
+					}elseif($this->data[$play->username]->get("나이") === 16){
+						$play->sendChat("[LifeEX]입학을 축하합니다! 당신은 고등학생입니다");
+						$this->data[$play->username]->set("학교", 고등학생);
+					}elseif($this->data[$play->username]->get("나이") === 19){
+						$play->sendChat("[LifeEX]입학을 축하합니다! 당신은 대학생입니다!");
+						$this->data[$play->username]->set("학교", 대학생);
+					}
+					}
+					break;
 				}
 			}
 			
 	public function defaultCommands($cmd, $params, $issuer, $alias){
 		$output = "";
-		$cfg = $this->data;
 		switch($cmd){
 			case "선택":
 				switch($params[0]){
-			default:
-					$output .= "사용법:/선택 <종족/성별> <사람,A,B,C/여,남>\n";
-					break;
 			case "":
-					$output .= "사용법:/선택 <종족/성별> <사람,A,B,C/여,남>\n";
-					break;
-			case "성별":
-				switch($params[1]){
-			default:
-				$output .="[LifeEX]성별은 남자 또는 여자밖에 없잖아요\n";
+				$output .= "사용법:/선택 <천족,마족> <남,여>\n";
 				break;
+			default:
+				$issuer->sendChat("사용법:/선택 <천족,마족> <남,여>\n");
+				break;
+			case "천족":
+				switch($params[1]){
 			case "":
-					$output .= "사용법:/선택 성별  <남/여>\n";
-					break;
+				$output .= "사용법:/선택 천족 <남,여>";
+				break;
+			default:
+				$output .= "사용법:/선택 천족 <남,여>";
+				break;
 			case "여":
-				if($cfg[$issuer->username]->get("성별") !== 선택안함){
-					$output .= "[LifeEX]당신은 이미 성별을 선택하셧습니다\n";
+				if($this->data[$issuer->username]->get("성별") !== 선택안함){
+					$output .= "[LifeEX]당신은 이미 성별과 종족을 선택하셧습니다\n";
 					break;					
 				}else{
-					$cfg[$issuer->username]->set("성별", 여자);
-					$output  .= "[LifeEX]당신은 여자입니다\n";
+					$this->data[$issuer->username]->set("성별", 여자);
+					$this->data[$issuer->username]->set("종족", 천족);
+					$output  .= "[LifeEX]성별: 여자 종족: 천족\n[LifeEX]선택이 완료 되었습니다\n";
 					break;
 				}
 				break;
 			case "남":
-				if($cfg[$issuer->username]->get("성별") !== 선택안함){
-					$output .= "[LifeEX]당신은 이미 성별을 선택하셧습니다\n";
+				if($this->data[$issuer->username]->get("성별") !== 선택안함){
+					$output .= "[LifeEX]당신은 이미 성별과 종족을 선택하셧습니다\n";
 					break;					
 				}else{
-					$cfg[$issuer->username]->set("성별", 남자);
-					$output  .= "[LifeEX]당신은 남자입니다\n";
+					$this->data[$issuer->username]->set("성별", 남자);
+					$this->data[$issuer->username]->set("종족", 천족);
+					$output  .= "[LifeEX]성별: 남자 종족: 천족\n[LifeEX]선택이 완료 되었습니다\n";
 					break;
 				}
-					break;
+				break;
 				}
-					break;
-			case "종족":
+				break;
+			case "마족":
 				switch($params[1]){
-			default:
-					$output .= "[LifeEX]종족은 사람,A,B,C 밖에없습니다\n";
-					break;
 			case "":
-					$output .= "사용법:/선택 종족 <사람/A/B/C>\n";
-					break;
-			case "사람":
-				if($cfg[$issuer->username]->get("종족") !== 선택안함){
-					$output .= "[LifeEX]당신은 이미 종족을 선택하셧습니다\n";
-					break;					
-				}else{
-					$cfg[$issuer->username]->set("종족", 사람);
-					$output  .= "[LifeEX]당신은 사람입니다\n";
-					break;
-				}
+				$output .= "사용법:/선택 마족 <남,여>";
 				break;
-			case "A":
-				if($cfg[$issuer->username]->get("종족") !== 선택안함){
-					$output .= "[LifeEX]당신은 이미 종족을 선택하셧습니다\n";
-					break;					
-				}else{
-					$cfg[$issuer->username]->set("종족", A);
-					$output  .= "[LifeEX]당신은 A입니다\n";
-					break;
-				}
-				break;
-			case "B":
-				if($cfg[$issuer->username]->get("종족") !== 선택안함){
-					$output .= "[LifeEX]당신은 이미 종족을 선택하셧습니다\n";
-					break;					
-				}else{
-					$cfg[$issuer->username]->set("종족", B);
-					$output  .= "[LifeEX]당신은 B입니다\n";
-					break;
-				}
-				break;
-			case "C":
-				if($cfg[$issuer->username]->get("종족") !== 선택안함){
-					$output .= "[LifeEX]당신은 이미 종족을 선택하셧습니다\n";
-					break;					
-				}else{
-					$cfg[$issuer->username]->set("종족", C);
-					$output  .= "[LifeEX]당신은 C입니다\n";
-					break;
-				}
-					break;
-				}
-					break;
-				}	
-					break;
-			case "진급":
-				switch($params[0]){
 			default:
-					$output .= "사용법:/진급  <초/중/고/대>\n";
-					break;
-			case "초":
-				if($cfg[$issuer->username]->get("나이") < 7){
-					$output  .= "[LifeEX]아직 어려서 초등학교에 입학할수 없어요\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === X and $cfg[$issuer->username]->get("나이") >= 7){
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("298"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("299"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("300"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("301"));
-					$cfg[$issuer->username]->set("학교", 초등학교);
-					$output  .= "[LifeEX]당신은 이제 초등학생입니다! 입학 축하드려요 ^_^\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 중학생){
-					$output .= "[LifeEX]중학생 이시면서 초등학교 다시오실려구요?\n";
+				$output .= "사용법:/선택 마족 <남,여>";
+			case "여":
+				if($this->data[$issuer->username]->get("성별") !== 선택안함){
+					$output .= "[LifeEX]당신은 이미 성별과 종족을 선택하셧습니다\n";
 					break;					
-				}else if($cfg[$issuer->username]->get("학교") === 초등학생){
-					$output  .= "[LifeEX]당신은 이미 초등학생입니다\n";
+				}else{
+					$this->data[$issuer->username]->set("성별", 여자);
+					$this->data[$issuer->username]->set("종족", 마족);
+					$output  .= "[LifeEX]성별: 여자 종족: 마족\n[LifeEX]선택이 완료 되었습니다";
 					break;
-				}else if($cfg[$issuer->username]->get("학교") === 고등학생){
-					$output .= "[LifeEX]고등학생 이시면서 초등학교 다시오실려구요?\n";
-					break;					
-				}else if($cfg[$issuer->username]->get("학교") === 대학생){
-					$output .= "[LifeEX]대학생 이시면서 초등학교 다시오실려구요?\n";
-					break;					
 				}
 				break;
-			case "중":
-				if($cfg[$issuer->username]->get("나이") < 13){
-					$output  .= "[LifeEX]아직 어려서 중학교에 입학할수 없어요\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === X){
-					$output  .= "[LifeEX]초등학교부터 입학하셔야죠\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 초등학생 and $cfg[$issuer->username]->get("나이") >= 13){
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("306"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("307"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("308"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("309"));
-					$cfg[$issuer->username]->set("학교", 중학교);
-					$output  .= "[LifeEX]당신은 이제 중학생입니다! 입학 축하드려요 ^_^\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 중학생){
-					$output  .= "[LifeEX]당신은 이미 중학생입니다\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 고등학생){
-					$output  .= "[LifeEX]$school 이시면서 초등학교 다시오실려구요?\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 대학생){
-					$output .= "[LifeEX]대학생 이시면서 중학교 다시오실려구요?\n";
+			case "남":
+				if($this->data[$issuer->username]->get("성별") !== 선택안함){
+					$output .= "[LifeEX]당신은 이미 성별과 종족을 선택하셧습니다\n";
 					break;					
-				}
-					break;
-			case "고":
-				if($cfg[$issuer->username]->get("나이") < 16){
-					$output  .= "[LifeEX]아직 어려서 고등학교에 입학할수 없어요\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === X){
-					$output  .= "[LifeEX]초등학교부터 입학하셔야죠\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 초등학생){
-					$output  .= "[LifeEX]중학교부터 입학하셔야죠\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 중학생 and $cfg[$issuer->username]->get("나이") >= 16){
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("314"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("315"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("316"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("317"));
-					$cfg[$issuer->username]->set("학교", 고등학교);
-					$output  .= "[LifeEX]당신은 이제 고등학생입니다! 입학 축하드려요 ^_^\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 고등학생){
-					$output  .= "[LifeEX]당신은 이미 고등학생입니다\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 대학생){
-					$output .= "[LifeEX]대학생 이시면서 고등학교 다시오실려구요?\n";
-					break;					
-				}
-					break;
-			case "대":
-				if($cfg[$issuer->username]->get("나이") < 19){
-					$output  .= "[LifeEX]아직 어려서 대학교에 입학할수 없어요\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === X){
-					$output  .= "[LifeEX]초등학교부터 입학하셔야죠\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 초등학생){
-					$output  .= "[LifeEX]중학교부터 입학하셔야죠\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 중학생){
-					$output  .= "[LifeEX]고등학교부터 입학하셔야죠\n";
-					break;
-				}else if($cfg[$issuer->username]->get("학교") === 고등학생 and $cfg[$issuer->username]->get("나이") >= 19){
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("310"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("311"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("312"));
-					$this->api->entity->drop(new Position($issuer->entity->x - 0.5, $issuer->entity->y, $issuer->entity->z - 0.5, $issuer->entity->level), BlockAPI::getItem("313"));
-					$cfg[$issuer->username]->set("학교", 대학교);
-					$output  .= "[LifeEX]당신은 이제 대학생입니다! 입학 축하드려요 ^_^\n";
-					break;
-				}else if($cfg[$issuer->username]['학교'] === 대학생){
-					$output  .= "[LifeEX]당신은 이미 대학생입니다\n";
+				}else{
+					$this->data[$issuer->username]->set("성별", 남자);
+					$this->data[$issuer->username]->set("종족", 마족);
+					$output  .= "[LifeEX]성별: 남자 종족: 마족\n[LifeEX]선택이 완료 되었습니다\n";
 					break;
 				}
-					break;
+				break;
+				}
+				break;
 				}
 				break;
 			case "성향":
-				if($cfg[$issuer->username]->get("종족") === 선택안함 or $cfg[$issuer->username]->get("성별") === 선택안함){
-					$output .= "[LifeEX]종족 또는 성별을 선택해주세요\n/선택 <종족/성별> <사람,A,B,C/남,여>\n";
-						break;
-				}else if($cfg[$issuer->username]->get("결혼") === X){
-					$성별 = $cfg[$issuer->username]->get("성별");
-					$나이 = $cfg[$issuer->username]->get("나이");
-					$학교 = $cfg[$issuer->username]->get("학교");
-					$결혼 = $cfg[$issuer->username]->get("결혼");
-					$종족 = $cfg[$issuer->username]->get("종족");
-					$output .= "[LifeEX]종족:$종족 성별:$성별 나이:$나이 학교:$학교 결혼여부:$결혼\n";
+				$parm = $this->api->player->get($params[0]);
+				if($params[0] == ""){
+					$성별 = $this->data[$issuer->username]->get("성별");
+					$나이 = $this->data[$issuer->username]->get("나이");
+					$학교 = $this->data[$issuer->username]->get("학교");
+					$결혼 = $this->data[$issuer->username]->get("결혼");
+					$종족 = $this->data[$issuer->username]->get("종족");
+					$직업 = $this->data[$issuer->username]->get("직업");
+				if($this->data[$issuer->username]->get("성별") === 선택안함){
+					$output .= "[LifeEX]성별과 종족을 선택해주세요\n선택하는법:/선택 <천족,마족> <남,여>\n";
+					break;
+				}else{
+					$output .= "[LifeEX]종족:$종족 성별:$성별 나이:$나이\n[LifeEX]".$학교."재학 직업:$직업 결혼:$결혼\n";
 					break;				
-				}else if($cfg[$issuer->username]->get("성별") === 여자 and $cfg[$issuer->username]->get("결혼") !== X){
-					$성별 = $cfg[$issuer->username]->get("성별");
-					$나이 = $cfg[$issuer->username]->get("나이");
-					$학교 = $cfg[$issuer->username]->get("학교");
-					$결혼 = $cfg[$issuer->username]->get("결혼");
-					$종족 = $cfg[$issuer->username]->get("종족");
-					$output .= "[LifeEX]종족:$종족 성별:$성별 나이:$나이 학교:$학교 남편:$결혼\n";
+				}
 					break;
-				}else if($cfg[$issuer->username]->get("성별") === 남자 and $cfg[$issuer->username]->get("결혼") !== X){
-					$성별 = $cfg[$issuer->username]->get("성별");
-					$나이 = $cfg[$issuer->username]->get("나이");
-					$학교 = $cfg[$issuer->username]->get("학교");
-					$결혼 = $cfg[$issuer->username]->get("결혼");
-					$종족 = $cfg[$issuer->username]->get("종족");
-					$output .= "[LifeEX]종족:$종족 성별:$성별 나이:$나이 학교:$학교 아내:$결혼\n";
+				}else if($parm === false){
+					$output .= "[LifeEX]없는 분이거나 접속하지 않으셧습니다";
 					break;
+				}else{
+					$성별 = $this->data[$parm->username]->get("성별");
+					$나이 = $this->data[$parm->username]->get("나이");
+					$학교 = $this->data[$parm->username]->get("학교");
+					$결혼 = $this->data[$parm->username]->get("결혼");
+					$종족 = $this->data[$parm->username]->get("종족");
+					$직업 = $this->data[$parm->username]->get("직업");
+				if($this->data[$parm->username]->get("성별") === 선택안함){
+					$output .= "[LifeEX]상대가 성별과 종족을 선택안했습니다\n";
+					break;
+				}else{
+					$output .= "[LifeEX]종족:$종족 성별:$성별 나이:$나이\n[LifeEX]".$학교."재학 직업:$직업 결혼:$결혼\n";
+					break;				
+				}
 				}
 				break;
 			case "결혼":
@@ -363,47 +291,57 @@ class LifeEX implements Plugin{
 				if($parm === false){
 					$output .= "[LifeEX]없는 분이거나 접속하지 않으셧습니다";
 					break;
-				}
-				if($cfg[$parm->username]->get("성별") === 선택안함){
-				$output .= "[LifeEX]$parm 님은 아직 성별을 선택하지 않으셧습니다\n";
-				break;
-				}else if($cfg[$issuer->username]->get("성별") === 선택안함){
-				$output .= "[LifeEX]성별을 먼저 선택해주세요\n";
-				break;
-				}else if($cfg[$issuer->username]->get("나이") <= 19){
-				$output .= "[LifeEX]결혼은 20살부터 가능합니다";
-				break;
-				}else if($cfg[$parm->username]->get("나이") <= 19){
-				$output .= "[LifeEX]아쉽지만 $parm 님은 20살이 아니십니다";
-				break;
-				}else if($cfg[$issuer->username]->get("결혼") !== X){
-				$output .= "[LifeEX]또 결혼하시게요?";
-				break;
-				}else if($cfg[$parm->username]->get("결혼") !== X){
-				$output .= "[LifeEX]아쉽지만 $parm 님은 이미 결혼하셧습니다\n";
-				break;
-				}else if($cfg[$issuer->username]->get("성별") === 여자 and $cfg[$parm->username]->get("성별") === 여자){
-				$output .= "[LifeEX]아쉽지만 $parm 님은 여자입니다";
-				break;
-				}else if($cfg[$issuer->username]->get("성별") === 남자 and $cfg[$parm->username]->get("성별") === 남자){
-				$output .= "[LifeEX]아쉽지만 $parm 님은 남자입니다";
-				break;
-				}else if($cfg[$issuer->username]->get("성별") === 남자 and $cfg[$parm->username]->get("성별") === 여자){
-				$parm = $this->api->player->get($params[0]);
-				$this->api->chat->broadcast("[LifeEX]축하합니다 $issuer 님은 $parm 님과 결혼하셧습니다!");
-				$cfg[$parm->username]->set("결혼", $issuer);
-				$cfg[$issuer->username]->set("결혼", $parm);
-				break;
-				}else if($cfg[$issuer->username]->get("성별") === 여자 and $cfg[$parm->username]->get("성별") === 남자){
-				$this->api->chat->broadcast("[LifeEX]축하합니다 $issuer 님은 $parm 님과 결혼하셧습니다!");
-				$parm = $this->api->player->get($params[0]);
-				$cfg[$parm->username]->set("결혼", $issuer);
-				$cfg[$issuer->username]->set("결혼", $parm);
-				break;
+				}else if($parm === $issuer){
+					$output .= "[LifeEX]자기자신하고 결혼하려구요?";
+					break;
+				}else if($this->data[$issuer->username]->get("나이") <= 19){
+					$output .= "[LifeEX]결혼은 20살부터 가능합니다";
+					break;
+				}else if($this->data[$parm->username]->get("나이") <= 19){
+					$parmage = $this->data[$parm->username]->get("나이");
+					$output .= "[LifeEX]아쉽지만".$parm."님은 ".$parmage."살 이십니다";
+					break;
+				}else if($this->data[$issuer->username]->get("결혼") !== X){
+					$output .= "[LifeEX]또 결혼하시게요?";
+					break;
+				}else if($this->data[$parm->username]->get("결혼") !== X){
+					$output .= "[LifeEX]아쉽지만 ".$parm."님은 이미 결혼하셧습니다\n";
+					break;
+				}else if($this->data[$issuer->username]->get("성별") === 여자 and $this->data[$parm->username]->get("성별") === 여자){
+					$output .= "[LifeEX]아쉽지만 ".$parm."님은 여자입니다";
+					break;
+				}else if($this->data[$issuer->username]->get("성별") === 남자 and $this->data[$parm->username]->get("성별") === 남자){
+					$output .= "[LifeEX]아쉽지만 ".$parm."님은 남자입니다";
+					break;
+				}else{
+					$this->api->chat->broadcast("[LifeEX]축하합니다 ".$issuer."님은 ".$parm ."님과 결혼하셧습니다!");
+					$this->data[$parm->username]->set("결혼", $issuer);
+					$this->data[$issuer->username]->set("결혼", $parm);
+					break;
 				}
 				break;
 			case "이혼":
-				$output .= "[LifeEX]현재 이혼은 아직 준비중입니다";
+				$data = $this->api->player->get($this->data[$issuer->username]->get("결혼"));
+				if($this->data[$issuer->username]->get("결혼") === X){
+					$output .= "[LifeEX]결혼 안하시고 이혼하시게요?";
+					break;
+				}else{
+					$this->api->chat->broadcast("[LifeEX]".$issuer."님이 ".$data."님과 이혼하셧습니다");
+					$this->data[$data2->username]->set("결혼", X);
+					$this->data[$issuer->username]->set("결혼", X);
+					break;
+				}
+				break;
+			case "직업":
+				if($params[0] == ""){
+					$output .= "사용법: /$cmd <직업>\n";
+					break;
+				}else{
+					$직업 = $params[0];
+					$issuer->sendChat("[LifeEX]당신은 ".$직업."입니다");
+					$this->data[$issuer->username]->set("직업", $직업);
+					break;
+				}
 				break;
 			}
 			 return $output;
