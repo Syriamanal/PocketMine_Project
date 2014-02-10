@@ -140,7 +140,7 @@ class LifeEX implements Plugin{
 			default:
 				$issuer->sendChat("Choose how :/ <Elyos, Asmodians> <M, F>\n");
 				break;
-			case "천족":
+			case "Elyos":
 				switch($params[1]){
 			case "":
 				$output .= "Choose how Elyos :/ <M, F>";
@@ -148,7 +148,7 @@ class LifeEX implements Plugin{
 			default:
 				$output .= "Choose how Elyos :/ <M, F>";
 				break;
-			case "여":
+			case "Female":
 				if($this->data[$issuer->username]->get("Sex") !== Blank){
 					$output .= "[LifeEX]If you already have the sex and race selection hasyeotseup\n";
 					break;					
@@ -159,7 +159,7 @@ class LifeEX implements Plugin{
 					break;
 				}
 				break;
-			case "남":
+			case "Man":
 				if($this->data[$issuer->username]->get("Sex") !== Blank){
 					$output .= "[LifeEX]If you already have the sex and race selection hasyeotseup\n";
 					break;					
@@ -190,7 +190,7 @@ class LifeEX implements Plugin{
 					break;
 				}
 				break;
-			case "남":
+			case "Man":
 				if($this->data[$issuer->username]->get("Sex") !== Blank){
 					$output .= "[LifeEX]If you already have the sex and race selection hasyeotseup\n";
 					break;					
