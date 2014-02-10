@@ -8,48 +8,6 @@ version=0.3 Major
 author=Milphy
 class=LifeEX
 apiversion=8,9,10,11
--------------
-업데이트 내역
-=============
-[Plugin]0.1
-최초 릴리스
----------------
-[Plugin]0.1.1
-명령어 오류 수정(by 원본) 
-LifeEX/Data 삭제(config.yml로 변경)
-----------------
-[Plugin]0.1.2
-config.yml 잡 옵션 제거
-명령어&안내문&config.yml 한글화
-진급&성별선택&결혼 수정중(모든 명령어는 0.2부터 사용가능) 
-----------------
-[Plugin]0.1.2.2
-이혼명령어 추가
-모든명령어 메시지 활성화
-----------------
-[Plugin]0.2
-일부 오류및 자잘한버그 수정
-내성별->성향(나이,성별 등 내성향 모두 확인)
-성별*종족선택->선택 <종족/성별> <사람/남,여>
-선택,성향,진급,결혼 구현(종족->사람밖에없음)
-결혼은 아직 거절은 없습니다
-나이는 아직 수동적(yml수정)
-이제 op가 아니어도 명령어를 사용 가능합니다
-----------------
-[Plugin]0.2.1
-Lifedata->Player(폴더 변경)
-결혼이 안되던점 수정
-일부 오류 수정
-----------------
-[Plugin]0.3 Major
-이혼 구현
-종족 활성화(천족,마족)
-종족별 특성 추가
-나이 시스템 추가(시간이되면 오름)
-명령어 변경
-선택-> 종족,성별
-상대의 성향 확인가능(/성향 <상대>)
-=============
 */
 
 class LifeEX implements Plugin{
@@ -61,22 +19,23 @@ class LifeEX implements Plugin{
 	public function __destruct(){}	
 	public function init(){
 		$this->readConfig();
-		$this->api->ban->cmdWhitelist("결혼");
-		$this->api->ban->cmdWhitelist("성향");
-		$this->api->ban->cmdWhitelist("선택");
-		$this->api->ban->cmdWhitelist("직업");
-		$this->api->ban->cmdWhitelist("이혼");
+		
+		$this->api->ban->cmdWhitelist("Marriage");
+		$this->api->ban->cmdWhitelist("Tendency");
+		$this->api->ban->cmdWhitelist("Selection");
+		$this->api->ban->cmdWhitelist("Job");
+		$this->api->ban->cmdWhitelist("Divorce");
 		$this->api->addHandler("player.join", array($this, "handler"), 5);
 		$this->api->addHandler("player.quit", array($this, "handler"), 5);
 		$this->api->addHandler("player.spawn", array($this, "handler"), 5);
 		$this->api->addHandler("player.respawn", array($this, "handler"), 5);
 		$this->api->addHandler("player.block.place", array($this, "handler"), 15);
 		$this->api->addHandler("player.block.break", array($this, "handler"), 15);
-		$this->api->console->register("이혼", "", array($this, "defaultCommands"));
-		$this->api->console->register("직업", "", array($this, "defaultCommands"));
-		$this->api->console->register("성향", "", array($this, "defaultCommands"));
-		$this->api->console->register("결혼", "<상대>", array($this, "defaultCommands"));
-		$this->api->console->register("선택", "<천족,마족> <남,여>", array($this, "defaultCommands"));
+		$this->api->console->register("Divorce", "", array($this, "defaultCommands"));
+		$this->api->console->register("Job", "", array($this, "defaultCommands"));
+		$this->api->console->register("Tendency", "", array($this, "defaultCommands"));
+		$this->api->console->register("Marriage", "<Opponent>", array($this, "defaultCommands"));
+		$this->api->console->register("Selection", "<천족,마족> <남,여>", array($this, "defaultCommands"));
 		$this->config = new Config("./plugins/LifeEX/config.yml", CONFIG_YAML, array("나이상승" => 45));
 		$this->api->schedule(8400, array($this, "handler"), array(), true, "LifeEX.SelectSystem");
 		$this->api->schedule(1200 * $this->config->get("나이상승"), array($this, "handler"), array(), true, "LifeEX.YearSystem");
@@ -93,12 +52,12 @@ class LifeEX implements Plugin{
 		switch($event){
 			case "player.join":
 					$this->data[$data->username] = new Config(DATA_PATH."/plugins/LifeEX/Player/".$data->username.".yml", CONFIG_YAML, array(
-							'종족' => "선택안함",
-							'성별' => "선택안함",
-							'나이' => "5",
-							'학교' => "X",
-							'직업' => "없음",
-							'결혼' => "X",
+							'Tribe' => "Blank",
+							'Sex' => "Blank",
+							'Age' => "5",
+							'School' => "X",
+							'Job' => "No",
+							'Marriage' => "X",
 						));
 					break;
 			case "player.quit":
@@ -107,8 +66,8 @@ class LifeEX implements Plugin{
 				}
 				break;
 			case "player.spawn":
-					if($this->data[$data->username]->get("성별") === "선택안함"){
-					$data->sendChat("[LifeEX]성별및 종족을 선택해주세요\n선택하는법:/선택 <천족,마족> <남,여>\n");
+					if($this->data[$data->username]->get("Sex") === "Blank"){
+					$data->sendChat("[LifeEX]Please select a gender and race \ n select your choice :/ <Elyos, Asmodians> <M, F>\n");
 						break;
 					}
 					break;
@@ -126,13 +85,13 @@ class LifeEX implements Plugin{
 				$target  = $data["target"];
 				$player = $this->api->player->get($data["player"]);
 				if($target->getID() === 14 or $target->getID() === 15){
-					if($player->gamemode !== CREATIVE and $this->data[$player]->get("종족") === "천족"){
+					if($player->gamemode !== CREATIVE and $this->data[$player]->get("Tribe") === "Elyos"){
 						$this->api->entity->drop(new Position($player->entity->x - 0.5, $player->entity->y, $player->entity->z - 0.5, $player->entity->level), BlockAPI::getItem($target->getID()));
 						break;
 					}
 				break;
 				}else if($target->getID() === 56){
-					if($player->gamemode !== CREATIVE and $this->data[$player]->get("종족") === "천족"){
+					if($player->gamemode !== CREATIVE and $this->data[$player]->get("Tribe") === "Elyos"){
 						$this->api->entity->drop(new Position($player->entity->x - 0.5, $player->entity->y, $player->entity->z - 0.5, $player->entity->level), BlockAPI::getItem(264));
 						break;
 					}
@@ -142,28 +101,28 @@ class LifeEX implements Plugin{
 			case "LifeEX.SelectSystem":
       			foreach($this->api->player->online() as $online){
         			$play = $this->api->player->get($online);
-        			if($this->data[$play->username]->get("성별") === "선택안함"){
-						$play->sendChat("[LifeEX]성별및 종족을 선택해주세요\n선택하는법:/선택 <천족,마족> <남,여>");
+        			if($this->data[$play->username]->get("Sex") === "Blank"){
+						$play->sendChat("[LifeEX]Please select a gender and race \ n select your choice :/ <Elyos, Asmodians> <M, F>");
 					}
 				}
 				break;
 			case "LifeEX.YearSystem":
       			foreach($this->api->player->online() as $online){
         			$play = $this->api->player->get($online);
-        			$this->data[$play->username]->set("나이", $this->data[$play->username]->get("나이")+1);
-					$play->sendChat("[LifeEX]당신의 나이가 올랐습니다(".$this->data[$play->username]->get("나이")."살)");
-					if($this->data[$play->username]->get("나이") === 7){
-						$play->sendChat("[LifeEX]입학을 축하합니다! 당신은 초등학생입니다");
-						$this->data[$play->username]->set("학교", 초등학생);
-					}elseif($this->data[$play->username]->get("나이") === 13){
-						$play->sendChat("[LifeEX]입학을 축하합니다! 당신은 중학생입니다");
-						$this->data[$play->username]->set("학교", 중학생);
-					}elseif($this->data[$play->username]->get("나이") === 16){
-						$play->sendChat("[LifeEX]입학을 축하합니다! 당신은 고등학생입니다");
-						$this->data[$play->username]->set("학교", 고등학생);
-					}elseif($this->data[$play->username]->get("나이") === 19){
-						$play->sendChat("[LifeEX]입학을 축하합니다! 당신은 대학생입니다!");
-						$this->data[$play->username]->set("학교", 대학생);
+        			$this->data[$play->username]->set("Age", $this->data[$play->username]->get("Age")+1);
+					$play->sendChat("[LifeEX]Your age has risen(".$this->data[$play->username]->get("Age")."살)");
+					if($this->data[$play->username]->get("Age") === 7){
+						$play->sendChat("[LifeEX]Congratulations on your admission! You are on elementary");
+						$this->data[$play->username]->set("School", 초등학생);
+					}elseif($this->data[$play->username]->get("Age") === 13){
+						$play->sendChat("[LifeEX]Congratulations on your admission! You are a junior");
+						$this->data[$play->username]->set("School", 중학생);
+					}elseif($this->data[$play->username]->get("Age") === 16){
+						$play->sendChat("[LifeEX]Congratulations on your admission! Are you a high school student");
+						$this->data[$play->username]->set("School", 고등학생);
+					}elseif($this->data[$play->username]->get("Age") === 19){
+						$play->sendChat("[LifeEX]Congratulations on your admission! Are you a college student?");
+						$this->data[$play->username]->set("School", 대학생);
 					}
 					}
 					break;
@@ -173,7 +132,7 @@ class LifeEX implements Plugin{
 	public function defaultCommands($cmd, $params, $issuer, $alias){
 		$output = "";
 		switch($cmd){
-			case "선택":
+			case "Selection":
 				switch($params[0]){
 			case "":
 				$output .= "사용법:/선택 <천족,마족> <남,여>\n";
