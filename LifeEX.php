@@ -135,69 +135,69 @@ class LifeEX implements Plugin{
 			case "Selection":
 				switch($params[0]){
 			case "":
-				$output .= "사용법:/선택 <천족,마족> <남,여>\n";
+				$output .= "Choose how :/ <Elyos, Asmodians> <M, F>\n";
 				break;
 			default:
-				$issuer->sendChat("사용법:/선택 <천족,마족> <남,여>\n");
+				$issuer->sendChat("Choose how :/ <Elyos, Asmodians> <M, F>\n");
 				break;
 			case "천족":
 				switch($params[1]){
 			case "":
-				$output .= "사용법:/선택 천족 <남,여>";
+				$output .= "Choose how Elyos :/ <M, F>";
 				break;
 			default:
-				$output .= "사용법:/선택 천족 <남,여>";
+				$output .= "Choose how Elyos :/ <M, F>";
 				break;
 			case "여":
-				if($this->data[$issuer->username]->get("성별") !== 선택안함){
-					$output .= "[LifeEX]당신은 이미 성별과 종족을 선택하셧습니다\n";
+				if($this->data[$issuer->username]->get("Sex") !== Blank){
+					$output .= "[LifeEX]If you already have the sex and race selection hasyeotseup\n";
 					break;					
 				}else{
-					$this->data[$issuer->username]->set("성별", 여자);
-					$this->data[$issuer->username]->set("종족", 천족);
-					$output  .= "[LifeEX]성별: 여자 종족: 천족\n[LifeEX]선택이 완료 되었습니다\n";
+					$this->data[$issuer->username]->set("Sex", Woman);
+					$this->data[$issuer->username]->set("Tribe", Elyos);
+					$output  .= "[LifeEX]Gender: Female Race: Elyos \ n [LifeEX] has been completed, select\n";
 					break;
 				}
 				break;
 			case "남":
-				if($this->data[$issuer->username]->get("성별") !== 선택안함){
-					$output .= "[LifeEX]당신은 이미 성별과 종족을 선택하셧습니다\n";
+				if($this->data[$issuer->username]->get("Sex") !== Blank){
+					$output .= "[LifeEX]If you already have the sex and race selection hasyeotseup\n";
 					break;					
 				}else{
-					$this->data[$issuer->username]->set("성별", 남자);
-					$this->data[$issuer->username]->set("종족", 천족);
-					$output  .= "[LifeEX]성별: 남자 종족: 천족\n[LifeEX]선택이 완료 되었습니다\n";
+					$this->data[$issuer->username]->set("Sex", Man);
+					$this->data[$issuer->username]->set("Tribe", Elyos);
+					$output  .= "[LifeEX]Gender: Male Race: Elyos \ n [LifeEX] has been completed, select\n";
 					break;
 				}
 				break;
 				}
 				break;
-			case "마족":
+			case "Asmodians":
 				switch($params[1]){
 			case "":
-				$output .= "사용법:/선택 마족 <남,여>";
+				$output .= "Choose how Elyos :/ <M, F>";
 				break;
 			default:
-				$output .= "사용법:/선택 마족 <남,여>";
-			case "여":
-				if($this->data[$issuer->username]->get("성별") !== 선택안함){
-					$output .= "[LifeEX]당신은 이미 성별과 종족을 선택하셧습니다\n";
+				$output .= "Choose how Elyos :/ <M, F>";
+			case "Female":
+				if($this->data[$issuer->username]->get("Sex") !== Blank){
+					$output .= "[LifeEX]If you already have the sex and race selection hasyeotseup\n";
 					break;					
 				}else{
-					$this->data[$issuer->username]->set("성별", 여자);
-					$this->data[$issuer->username]->set("종족", 마족);
-					$output  .= "[LifeEX]성별: 여자 종족: 마족\n[LifeEX]선택이 완료 되었습니다";
+					$this->data[$issuer->username]->set("Sex", Woman);
+					$this->data[$issuer->username]->set("Tribe", Asmodians);
+					$output  .= "[LifeEX]Gender: Female Race: Elyos \ n [LifeEX] has been completed, select";
 					break;
 				}
 				break;
 			case "남":
-				if($this->data[$issuer->username]->get("성별") !== 선택안함){
-					$output .= "[LifeEX]당신은 이미 성별과 종족을 선택하셧습니다\n";
+				if($this->data[$issuer->username]->get("Sex") !== Blank){
+					$output .= "[LifeEX]If you already have the sex and race selection hasyeotseup\n";
 					break;					
 				}else{
-					$this->data[$issuer->username]->set("성별", 남자);
-					$this->data[$issuer->username]->set("종족", 마족);
-					$output  .= "[LifeEX]성별: 남자 종족: 마족\n[LifeEX]선택이 완료 되었습니다\n";
+					$this->data[$issuer->username]->set("Sex", Man);
+					$this->data[$issuer->username]->set("Tribe", Asmodians);
+					$output  .= "[LifeEX]Gender: Male Race: Elyos \ n [LifeEX] has been completed, select\n";
 					break;
 				}
 				break;
@@ -205,100 +205,100 @@ class LifeEX implements Plugin{
 				break;
 				}
 				break;
-			case "성향":
+			case "Tendency":
 				$parm = $this->api->player->get($params[0]);
 				if($params[0] == ""){
-					$성별 = $this->data[$issuer->username]->get("성별");
-					$나이 = $this->data[$issuer->username]->get("나이");
-					$학교 = $this->data[$issuer->username]->get("학교");
-					$결혼 = $this->data[$issuer->username]->get("결혼");
-					$종족 = $this->data[$issuer->username]->get("종족");
-					$직업 = $this->data[$issuer->username]->get("직업");
-				if($this->data[$issuer->username]->get("성별") === 선택안함){
-					$output .= "[LifeEX]성별과 종족을 선택해주세요\n선택하는법:/선택 <천족,마족> <남,여>\n";
+					$Sex = $this->data[$issuer->username]->get("Sex");
+					$Age = $this->data[$issuer->username]->get("Age");
+					$School = $this->data[$issuer->username]->get("School");
+					$Marriage = $this->data[$issuer->username]->get("Marriage");
+					$Tribe = $this->data[$issuer->username]->get("Tribe");
+					$Job = $this->data[$issuer->username]->get("Job");
+				if($this->data[$issuer->username]->get("Sex") === Blank){
+					$output .= "[LifeEX]Please select a gender and race \ n select your choice :/ <Elyos, Asmodians> <M, F>\n";
 					break;
 				}else{
-					$output .= "[LifeEX]종족:$종족 성별:$성별 나이:$나이\n[LifeEX]".$학교."재학 직업:$직업 결혼:$결혼\n";
+					$output .= "[LifeEX]Species: $ species Gender: $ gender Age: $ age \ n [LifeEX] ". $ School" school Occupation: Occupation Marital $ $ marriage\n";
 					break;				
 				}
 					break;
 				}else if($parm === false){
-					$output .= "[LifeEX]없는 분이거나 접속하지 않으셧습니다";
+					$output .= "[LifeEX]If you do not want no minute or shut up connection";
 					break;
 				}else{
-					$성별 = $this->data[$parm->username]->get("성별");
-					$나이 = $this->data[$parm->username]->get("나이");
-					$학교 = $this->data[$parm->username]->get("학교");
-					$결혼 = $this->data[$parm->username]->get("결혼");
-					$종족 = $this->data[$parm->username]->get("종족");
-					$직업 = $this->data[$parm->username]->get("직업");
-				if($this->data[$parm->username]->get("성별") === 선택안함){
-					$output .= "[LifeEX]상대가 성별과 종족을 선택안했습니다\n";
+					$Sex = $this->data[$parm->username]->get("Sex");
+					$Age = $this->data[$parm->username]->get("Age");
+					$School = $this->data[$parm->username]->get("School");
+					$Marriage = $this->data[$parm->username]->get("Marriage");
+					$Tribe = $this->data[$parm->username]->get("Tribe");
+					$Job = $this->data[$parm->username]->get("Job");
+				if($this->data[$parm->username]->get("Sex") === Blank){
+					$output .= "[LifeEX]Dealing with gender and race was not selected\n";
 					break;
 				}else{
-					$output .= "[LifeEX]종족:$종족 성별:$성별 나이:$나이\n[LifeEX]".$학교."재학 직업:$직업 결혼:$결혼\n";
+					$output .= "[LifeEX]Species: $ species Gender: $ gender Age: $ age \ n [LifeEX] ". $ School" school Occupation: Occupation Marital $ $ marriage\n";
 					break;				
 				}
 				}
 				break;
-			case "결혼":
+			case "Marriage":
 				if($params[0] == ""){
-					$output .= "사용법: /$cmd <상대>\n";
+					$output .= "How to use: /$cmd <Opponent>\n";
 					break;
 				}
 				$parm = $this->api->player->get($params[0]);
 				if($parm === false){
-					$output .= "[LifeEX]없는 분이거나 접속하지 않으셧습니다";
+					$output .= "[LifeEX]If you do not want no minute or shut up connection";
 					break;
 				}else if($parm === $issuer){
-					$output .= "[LifeEX]자기자신하고 결혼하려구요?";
+					$output .= "[LifeEX]And married his own doing?";
 					break;
-				}else if($this->data[$issuer->username]->get("나이") <= 19){
-					$output .= "[LifeEX]결혼은 20살부터 가능합니다";
+				}else if($this->data[$issuer->username]->get("Age") <= 19){
+					$output .= "[LifeEX]Be available from the 20-year-old married";
 					break;
-				}else if($this->data[$parm->username]->get("나이") <= 19){
-					$parmage = $this->data[$parm->username]->get("나이");
-					$output .= "[LifeEX]아쉽지만".$parm."님은 ".$parmage."살 이십니다";
+				}else if($this->data[$parm->username]->get("Age") <= 19){
+					$parmage = $this->data[$parm->username]->get("Age");
+					$output .= "[LifeEX]Unfortunately,".$parm."By the ".$parmage."Brunner-year-old";
 					break;
-				}else if($this->data[$issuer->username]->get("결혼") !== X){
-					$output .= "[LifeEX]또 결혼하시게요?";
+				}else if($this->data[$issuer->username]->get("Marriage") !== X){
+					$output .= "[LifeEX]I'll marry again?";
 					break;
-				}else if($this->data[$parm->username]->get("결혼") !== X){
-					$output .= "[LifeEX]아쉽지만 ".$parm."님은 이미 결혼하셧습니다\n";
+				}else if($this->data[$parm->username]->get("Marriage") !== X){
+					$output .= "[LifeEX]Unfortunately, ".$parm."It is already Marital hasyeotseup\n";
 					break;
-				}else if($this->data[$issuer->username]->get("성별") === 여자 and $this->data[$parm->username]->get("성별") === 여자){
-					$output .= "[LifeEX]아쉽지만 ".$parm."님은 여자입니다";
+				}else if($this->data[$issuer->username]->get("Sex") === Woman and $this->data[$parm->username]->get("Sex") === Woman){
+					$output .= "[LifeEX]Unfortunately, ".$parm."Said the woman.Said the woman.";
 					break;
-				}else if($this->data[$issuer->username]->get("성별") === 남자 and $this->data[$parm->username]->get("성별") === 남자){
-					$output .= "[LifeEX]아쉽지만 ".$parm."님은 남자입니다";
+				}else if($this->data[$issuer->username]->get("Sex") === Man and $this->data[$parm->username]->get("Sex") === Man){
+					$output .= "[LifeEX]Unfortunately, ".$parm."Said the man.";
 					break;
 				}else{
-					$this->api->chat->broadcast("[LifeEX]축하합니다 ".$issuer."님은 ".$parm ."님과 결혼하셧습니다!");
-					$this->data[$parm->username]->set("결혼", $issuer);
-					$this->data[$issuer->username]->set("결혼", $parm);
+					$this->api->chat->broadcast("[LifeEX]Congratulations ".$issuer."By the ".$parm ."S hasyeotseup be married!");
+					$this->data[$parm->username]->set("Marriage", $issuer);
+					$this->data[$issuer->username]->set("Marriage", $parm);
 					break;
 				}
 				break;
-			case "이혼":
-				$data = $this->api->player->get($this->data[$issuer->username]->get("결혼"));
-				if($this->data[$issuer->username]->get("결혼") === X){
-					$output .= "[LifeEX]결혼 안하시고 이혼하시게요?";
+			case "Divorce":
+				$data = $this->api->player->get($this->data[$issuer->username]->get("Marriage"));
+				if($this->data[$issuer->username]->get("Marriage") === X){
+					$output .= "[LifeEX]He has not married a divorce would you do?";
 					break;
 				}else{
-					$this->api->chat->broadcast("[LifeEX]".$issuer."님이 ".$data."님과 이혼하셧습니다");
-					$this->data[$data2->username]->set("결혼", X);
-					$this->data[$issuer->username]->set("결혼", X);
+					$this->api->chat->broadcast("[LifeEX]".$issuer."By ".$data."By the divorce hasyeotseup");
+					$this->data[$data2->username]->set("Marriage", X);
+					$this->data[$issuer->username]->set("Marriage", X);
 					break;
 				}
 				break;
-			case "직업":
+			case "Job":
 				if($params[0] == ""){
-					$output .= "사용법: /$cmd <직업>\n";
+					$output .= "How to use: /$cmd <Job>\n";
 					break;
 				}else{
-					$직업 = $params[0];
-					$issuer->sendChat("[LifeEX]당신은 ".$직업."입니다");
-					$this->data[$issuer->username]->set("직업", $직업);
+					$Job = $params[0];
+					$issuer->sendChat("[LifeEX]You are ".$Job."It is");
+					$this->data[$issuer->username]->set("Job", $Job);
 					break;
 				}
 				break;
